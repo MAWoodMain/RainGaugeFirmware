@@ -7,5 +7,7 @@
 void backupRegInit(void);
 int readBackupReg(int registerNumber);
 void writeBackupReg(int registerNumber,int value);
+void storeTenBitValue(int position, int value);
+int getTenBitValue(int position);
 
 #endif

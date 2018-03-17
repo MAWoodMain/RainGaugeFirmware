@@ -89,27 +89,15 @@ void setup() {
     
     doubleBlink();
     delay(10000);
-    int val = 0;
-    for(int i = 0; i<16; i++)
-    {
-      for(int n = 0; n < 0x03ff; n+=64)
-      {
-        storeTenBitValue(i, n);
-        delay(10);
-        val = getTenBitValue(i);
-        if(val != n)
-        {
-          Serial1.print(i);
-          Serial1.print(" : ");
-          Serial1.print(n, HEX);
-          Serial1.print(" as ");
-          Serial1.print(val, HEX);
-          Serial1.println(" BAD");
-        }
-      }
-    }
     shortBlink();
     Serial1.println(F("Starting"));
+    int readings[16];
+    int i = 0;
+    getReadings(readings);
+    for(i = 0; i<16; i++)
+    {
+      Serial1.print(i);
+    }
     
 /*
     os_init();

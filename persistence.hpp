@@ -11,7 +11,7 @@ int getStateNumber(void);
 bool isTransmitState(void);
 void storeReading(int reading);
 void incrementState(void);
-void storeTenBitValue(int position, int value);
-int getTenBitValue(int position);
+
+void getReadings(int readings[]);
 
 #endif
