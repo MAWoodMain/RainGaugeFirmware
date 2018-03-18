@@ -151,6 +151,7 @@ int getTenBitValue(int position)
     case 0:
       regNum += 0;
       value = readBackupReg(regNum);
+      value &= 0x03ff;
       break;
       
     case 1:

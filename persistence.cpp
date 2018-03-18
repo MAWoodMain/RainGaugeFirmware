@@ -2,26 +2,30 @@
 
 int getStateNumber()
 {
-  getTenBitValue(STATE_LOCATION);
+  return getTenBitValue(15);
 }
 
 bool isTransmitState()
 {
-  return getStateNumber() == TRANSMIT_STATE;
+  return getStateNumber() >= TRANSMIT_STATE;
 }
 
 void storeReading(int reading)
 {
   int state = getStateNumber();
-  if(state != TRANSMIT_STATE)
-  {
-    storeTenBitValue(state, reading);
-  }
+  Serial1.print("Storing ");
+  Serial1.print(reading);
+  Serial1.print(" in ");
+  Serial1.println(state);
+  storeTenBitValue(state, reading);
 }
 
 void incrementState()
 {
-  storeTenBitValue(STATE_LOCATION, (getStateNumber() + 1) % 17);
+  int state = getStateNumber();
+  state++;
+  state %= 15;
+  storeTenBitValue(15, state);
 }
 
 void getReadings(int readings[])

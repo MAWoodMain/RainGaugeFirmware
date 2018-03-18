@@ -6,6 +6,7 @@
 #include "tx_counter.hpp"
 #include "blink.hpp"
 #include "persistence.hpp"
+#include "payloadBuilder.hpp"
 
 // Pin mappings for radio
 #define SSPIN   PA4
@@ -31,6 +32,10 @@ void os_getDevKey (u1_t* buf) { }
 static uint8_t mydata[] = "Test";
 static uint8_t mydatanum = 0;
 static osjob_t sendjob;
+static uint8_t custom_payload[51];
+static int payload_length = 0;
+
+RTClock rt (RTCSEL_LSE);
 
 const lmic_pinmap lmic_pins = {
     .nss = SSPIN,
@@ -68,38 +73,90 @@ void do_send(osjob_t* j){
     } else {
         // Prepare upstream data transmission at the next possible time.
         //LMIC_setTxData2(1, mydata, sizeof(mydata)-1, 1);
-        char buf[5];
-        // convert 123 to string [buf]
-        const char base[] = "#";
-        sprintf(buf, "%s%.3i", base, mydatanum);
-        uint8_t buff[5];
-        for(int i = 0; i < 5; i++) buff[i] = buf[i];
-        LMIC_setTxData2(1, buff, sizeof(buff)-1, 1);
+        LMIC_setTxData2(1, custom_payload, payload_length, 0); // last parameters for ACK (0 or 1)
         increment_counter();
-        mydatanum++;
         Serial.println(F("Packet queued"));
     }
 }
 
+int getBattery()
+{
+  pinMode(PA0, INPUT_ANALOG);
+  int avg_power = 0;
+  for (int i = 0; i < 5; i++) {
+    avg_power += analogRead(PA0);
+  }
+  avg_power = avg_power / 5;
+  avg_power -= 3000;
+  avg_power = constrain(avg_power, 0, 1023);
+  return avg_power;
+}
+
+void printAllReadings()
+{
+  int readings[16];
+  getReadings(readings);
+  for(int i=0; i<16; i++)
+  {
+    Serial1.println(readings[i]);
+  }
+}
+
+void PrintHex8(uint8_t *data, uint8_t length) // prints 8-bit data in hex with leading zeroes
+{
+     char tmp[16];
+       for (int i=0; i<length; i++) { 
+         sprintf(tmp, "%.2X",data[i]); 
+         Serial1.print(tmp);
+       }
+}
+void PrintHex16(int data) // prints 16-bit data in hex with leading zeroes
+{
+       char tmp[16];
+       sprintf(tmp, "0x%.4X",data); 
+       Serial1.print(tmp);
+}
+
 void setup() {
     Serial1.begin(9600);
+    //backupRegInit();
     blinkInit();
-    backupRegInit();
     initPressure();
-    
-    doubleBlink();
-    delay(10000);
     shortBlink();
     Serial1.println(F("Starting"));
-    int readings[16];
-    int i = 0;
-    getReadings(readings);
-    for(i = 0; i<16; i++)
-    {
-      Serial1.print(i);
-    }
     
-/*
+    Serial1.print("State: ");
+    Serial1.println(getStateNumber());
+    storeReading(getAverageAdjustedPressure());
+    
+    if(isTransmitState())
+    {
+      payload_length = constructPayload(getBattery(), rt.getTime(), &custom_payload[0]);
+      Serial1.print("Payload size: ");
+      Serial1.println(payload_length);
+      Serial1.println("Payload");
+      for(int i = 0; i<payload_length; i++)
+      {
+        PrintHex8(&custom_payload[i], 1);
+      }
+      Serial1.println();
+      Serial1.println("Registers");
+      for(int n=0;n<10; n++)
+      {
+        PrintHex16(readBackupReg(n));
+      }
+      Serial1.println();
+      //startRadioAndTransmit();
+    }
+    incrementState();
+    
+    printAllReadings();
+    delay(1000);
+    hal_sleep();
+}
+
+void startRadioAndTransmit()
+{
     os_init();
     LMIC_reset();
     
@@ -142,7 +199,7 @@ void setup() {
     LMIC.seqnoUp = read_counter();
 
     // Start job
-    do_send(&sendjob);*/
+    do_send(&sendjob);
 }
 
 

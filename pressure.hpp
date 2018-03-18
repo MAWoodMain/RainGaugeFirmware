@@ -10,5 +10,6 @@ int getPressure(unsigned char* arr);
 int getTemperature(unsigned char* arr);
 int adjustPressure(int rawPressure);
 int getAverageRawPressure();
+int getAverageAdjustedPressure();
 
 #endif

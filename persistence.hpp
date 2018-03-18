@@ -3,8 +3,8 @@
 
 #include "backupReg.hpp"
 #include "Arduino.h"
-#define STATE_LOCATION 0
-#define TRANSMIT_STATE 16
+#define STATE_LOCATION 15
+#define TRANSMIT_STATE 14
 
 
 int getStateNumber(void);

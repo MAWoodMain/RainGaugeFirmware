@@ -49,3 +49,14 @@ int getAverageRawPressure()
   }
   return pressure/10;  
 }
+
+int getAverageAdjustedPressure()
+{
+  int pressure = 0;
+  do
+  {
+    pressure = adjustPressure(getAverageRawPressure());
+  } while(pressure > 1024);
+  return pressure;
+}
+
