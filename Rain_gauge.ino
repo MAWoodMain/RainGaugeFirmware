@@ -18,11 +18,11 @@
 const unsigned TX_INTERVAL = 60;
 
 // LoRaWAN NwkSKey, network session key
-static const PROGMEM u1_t NWKSKEY[16] = { 0xF7, 0x4B, 0x10, 0x96, 0xF0, 0xD3, 0xDf, 0x8B, 0x72, 0xC5, 0xA3, 0x99, 0x19, 0xA4, 0xAF, 0x73 };
+static const PROGMEM u1_t NWKSKEY[16] = { 0xf7, 0x36, 0x14, 0x7f, 0xb5, 0x38, 0xbc, 0xcb, 0x6a, 0xf5, 0xb4, 0x42, 0xf0, 0x72, 0x17, 0x7e };
 // LoRaWAN AppSKey, application session key
-static const u1_t PROGMEM APPSKEY[16] = { 0x00, 0xC7, 0xCA, 0x42, 0xC8, 0x46, 0x7B, 0x39, 0xE0, 0xF2, 0x52, 0xFE, 0x72, 0x47, 0x07, 0x4E };
+static const u1_t PROGMEM APPSKEY[16] = { 0x11, 0xfa, 0xb4, 0x16, 0xa3, 0x32, 0x9b, 0x38, 0x46, 0xe4, 0x58, 0x73, 0x65, 0x26, 0x9a, 0x95 };
 // Device address
-static const u4_t DEVADDR = 0x06BF10C8;
+static const u4_t DEVADDR = 0x07d68c11;
 
 // These callbacks are only used in over-the-air activation
 void os_getArtEui (u1_t* buf) { }
@@ -45,23 +45,24 @@ const lmic_pinmap lmic_pins = {
 };
 
 void onEvent (ev_t ev) {
-    Serial.print(os_getTime());
-    Serial.print(": ");
+    Serial1.print(os_getTime());
+    Serial1.print(": ");
     switch(ev) {
         case EV_TXCOMPLETE:
-            Serial.println(F("EV_TXCOMPLETE (includes waiting for RX windows)"));
+            Serial1.println(F("EV_TXCOMPLETE (includes waiting for RX windows)"));
             if (LMIC.txrxFlags & TXRX_ACK)
-              Serial.println(F("Received ack"));
+              Serial1.println(F("Received ack"));
             if (LMIC.dataLen) {
-              Serial.println(F("Received "));
-              Serial.println(LMIC.dataLen);
-              Serial.println(F(" bytes of payload"));
+              Serial1.println(F("Received "));
+              Serial1.println(LMIC.dataLen);
+              Serial1.println(F(" bytes of payload"));
             }
-            // Schedule next transmission
-            os_setTimedCallback(&sendjob, os_getTime()+sec2osticks(TX_INTERVAL), do_send);
+            Serial1.println("Sleep-2");
+            delay(500);
+            hal_sleep();
             break;
          default:
-            Serial.println(F("Unknown event"));
+            Serial1.println(F("Unknown event"));
             break;
     }
 }
@@ -69,13 +70,11 @@ void onEvent (ev_t ev) {
 void do_send(osjob_t* j){
     // Check if there is not a current TX/RX job running
     if (LMIC.opmode & OP_TXRXPEND) {
-        Serial.println(F("OP_TXRXPEND, not sending"));
+        Serial1.println(F("OP_TXRXPEND, not sending"));
     } else {
-        // Prepare upstream data transmission at the next possible time.
-        //LMIC_setTxData2(1, mydata, sizeof(mydata)-1, 1);
-        LMIC_setTxData2(1, custom_payload, payload_length, 0); // last parameters for ACK (0 or 1)
+        LMIC_setTxData2(1, custom_payload, payload_length, 1); // last parameters for ACK (0 or 1)
         increment_counter();
-        Serial.println(F("Packet queued"));
+        Serial1.println(F("Packet queued"));
     }
 }
 
@@ -113,46 +112,8 @@ void PrintHex8(uint8_t *data, uint8_t length) // prints 8-bit data in hex with l
 void PrintHex16(int data) // prints 16-bit data in hex with leading zeroes
 {
        char tmp[16];
-       sprintf(tmp, "0x%.4X",data); 
+       sprintf(tmp, "%.4X",data); 
        Serial1.print(tmp);
-}
-
-void setup() {
-    Serial1.begin(9600);
-    //backupRegInit();
-    blinkInit();
-    initPressure();
-    shortBlink();
-    Serial1.println(F("Starting"));
-    
-    Serial1.print("State: ");
-    Serial1.println(getStateNumber());
-    storeReading(getAverageAdjustedPressure());
-    
-    if(isTransmitState())
-    {
-      payload_length = constructPayload(getBattery(), rt.getTime(), &custom_payload[0]);
-      Serial1.print("Payload size: ");
-      Serial1.println(payload_length);
-      Serial1.println("Payload");
-      for(int i = 0; i<payload_length; i++)
-      {
-        PrintHex8(&custom_payload[i], 1);
-      }
-      Serial1.println();
-      Serial1.println("Registers");
-      for(int n=0;n<10; n++)
-      {
-        PrintHex16(readBackupReg(n));
-      }
-      Serial1.println();
-      //startRadioAndTransmit();
-    }
-    incrementState();
-    
-    printAllReadings();
-    delay(1000);
-    hal_sleep();
 }
 
 void startRadioAndTransmit()
@@ -189,8 +150,8 @@ void startRadioAndTransmit()
     // Disable link check validation
     LMIC_setLinkCheckMode(0);
 
-    // TTN uses SF9 for its RX2 window.
-    LMIC.dn2Dr = DR_SF9;
+    // SOTON uses SF12 for its RX2 window.
+    LMIC.dn2Dr = DR_SF12;
 
     // Set data rate and transmit power for uplink (note: txpow seems to be ignored by the library)
     LMIC_setDrTxpow(DR_SF7,14);
@@ -202,10 +163,41 @@ void startRadioAndTransmit()
     do_send(&sendjob);
 }
 
+void setup() {
+    Serial1.begin(9600);
+    //backupRegInit();
+    blinkInit();
+    initPressure();
+    shortBlink();
+    Serial1.println("Awake");
+    
+    Serial1.print("State: ");
+    Serial1.println(getStateNumber());
+    storeReading(getAverageAdjustedPressure());
+    
+    if(isTransmitState())
+    {
+      payload_length = constructPayload(getBattery(), rt.getTime(), getAverageTemperature(), &custom_payload[0]);
+      Serial1.print("Payload size: ");
+      Serial1.println(payload_length);
+      Serial1.println("Payload");
+      for(int i = 0; i<payload_length; i++)
+      {
+        PrintHex8(&custom_payload[i], 1);
+      }
+      Serial1.println();
+      incrementState();
+      startRadioAndTransmit();
+    } else
+    {
+      incrementState();
+      Serial1.println("Sleep-1");
+      delay(100);
+      hal_sleep();
+    }
+}
 
-void loop() {    
-    Serial1.println("PRES");
-    Serial1.println(adjustPressure(getAverageRawPressure()));
-    //os_runloop_once();
-    delay(500);
+
+void loop() {
+    os_runloop_once();
 }

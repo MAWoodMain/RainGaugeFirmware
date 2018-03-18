@@ -31,6 +31,7 @@ void construct_rain_block(unsigned char* arr)
   for(int i=0; i<9; i++)
   {
     memcpy(&arr[2 + 2*i], BKP_REG_BASE + i, 2);
+    reverse_array(&arr[2 + 2*i], 2);
   }
   memcpy(&arr[2 + 18], BKP_REG_BASE + 9, 1);
   arr[21] = arr[2+19] & 0xf3;
@@ -52,12 +53,13 @@ void construct_time_segment(unsigned char* arr, int time) {
     construct_block(&arr[0 * (INT_BLOCK_LENGTH + 2) + 3], INT_BLOCK_ID, INT_BLOCK_LENGTH, &time);
 }
 
-void construct_rain_segment(unsigned char* arr) {
+void construct_rain_segment(float temp, unsigned char* arr) {
     construct_segment_header(&arr[0], RAIN_SEG_ID);
     construct_rain_block(&arr[3]);
+    construct_block(&arr[3+21], FLOAT_BLOCK_ID, FLOAT_BLOCK_LENGTH, &temp);
 }
 
-int constructPayload(int battery, int time, unsigned char* arr)
+int constructPayload(int battery, int time, float temp, unsigned char* arr)
 {
     int packet_length = 2;
     arr[0] = PACKET_START_1;
@@ -73,8 +75,8 @@ int constructPayload(int battery, int time, unsigned char* arr)
     }
     // 2 + 9 + 7 = 18 for header, time and battery 51-18 = 33 bytes left for rain data
 
-    construct_rain_segment(&arr[packet_length]);
-    packet_length += (3 + 2 + 19); // 24
-    return packet_length; // 42 bytes
+    construct_rain_segment(temp, &arr[packet_length]);
+    packet_length += (3 + 2 + 19 + 6); // 30
+    return packet_length; // 48 bytes
 }
 

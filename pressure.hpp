@@ -9,7 +9,8 @@ bool isStale(unsigned char* arr);
 int getPressure(unsigned char* arr);
 int getTemperature(unsigned char* arr);
 int adjustPressure(int rawPressure);
-int getAverageRawPressure();
-int getAverageAdjustedPressure();
+int getAverageRawPressure(void);
+int getAverageAdjustedPressure(void);
+float getAverageTemperature(void);
 
 #endif

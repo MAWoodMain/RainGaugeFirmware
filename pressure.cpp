@@ -60,3 +60,18 @@ int getAverageAdjustedPressure()
   return pressure;
 }
 
+float getAverageTemperature()
+{
+  uint8_t data[4];
+  float temp = 0;
+  for(int i = 0; i < 10; i++)
+  {
+    do
+    {
+      readSensor(&data[0]);
+    } while(isStale(&data[0]));
+    temp += getTemperature(&data[0]);
+  }
+  return (((temp/10.0)/2047.0)*200.0)-50.0;  
+}
+

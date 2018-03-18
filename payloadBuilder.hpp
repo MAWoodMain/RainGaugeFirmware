@@ -30,6 +30,6 @@
 #define FLOAT_BLOCK_LENGTH      0x04
 #define DOUBLE_BLOCK_LENGTH     0x08
 
-int constructPayload(int battery, int time, unsigned char* arr);
+int constructPayload(int battery, int time, float temp, unsigned char* arr);
 
 #endif
