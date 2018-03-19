@@ -15,6 +15,9 @@
 #define DIO1    PB10
 #define DIO2    PB11
 
+#define TX_PROFILE PB15
+#define AWAKE_PROFILE PB14
+
 const unsigned TX_INTERVAL = 60;
 
 // LoRaWAN NwkSKey, network session key
@@ -50,6 +53,7 @@ void onEvent (ev_t ev) {
     switch(ev) {
         case EV_TXCOMPLETE:
             Serial1.println(F("EV_TXCOMPLETE (includes waiting for RX windows)"));
+            digitalWrite(TX_PROFILE, LOW);
             if (LMIC.txrxFlags & TXRX_ACK)
               Serial1.println(F("Received ack"));
             if (LMIC.dataLen) {
@@ -58,7 +62,8 @@ void onEvent (ev_t ev) {
               Serial1.println(F(" bytes of payload"));
             }
             Serial1.println("Sleep-2");
-            delay(500);
+            Serial1.flush();
+            digitalWrite(AWAKE_PROFILE, LOW);
             hal_sleep();
             break;
          default:
@@ -72,7 +77,7 @@ void do_send(osjob_t* j){
     if (LMIC.opmode & OP_TXRXPEND) {
         Serial1.println(F("OP_TXRXPEND, not sending"));
     } else {
-        LMIC_setTxData2(1, custom_payload, payload_length, 1); // last parameters for ACK (0 or 1)
+        LMIC_setTxData2(1, custom_payload, payload_length, 0); // last parameters for ACK (0 or 1)
         increment_counter();
         Serial1.println(F("Packet queued"));
     }
@@ -118,6 +123,7 @@ void PrintHex16(int data) // prints 16-bit data in hex with leading zeroes
 
 void startRadioAndTransmit()
 {
+    digitalWrite(TX_PROFILE, HIGH);
     os_init();
     LMIC_reset();
     
@@ -164,6 +170,10 @@ void startRadioAndTransmit()
 }
 
 void setup() {
+    pinMode(TX_PROFILE, OUTPUT);
+    pinMode(AWAKE_PROFILE, OUTPUT);
+    digitalWrite(AWAKE_PROFILE, HIGH);
+    digitalWrite(TX_PROFILE, LOW);
     Serial1.begin(9600);
     //backupRegInit();
     blinkInit();
@@ -192,7 +202,8 @@ void setup() {
     {
       incrementState();
       Serial1.println("Sleep-1");
-      delay(100);
+      Serial1.flush();
+      digitalWrite(AWAKE_PROFILE, LOW);
       hal_sleep();
     }
 }
